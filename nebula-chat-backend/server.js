@@ -459,17 +459,20 @@ const server = http.createServer(app);
 // Trust Proxy for Render/Heroku (Required for secure cookies behind load balancers)
 app.set("trust proxy", 1);
 
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const PROD_URL = "https://nebula-jxl8.onrender.com"; 
+const CLIENT_URL = process.env.NODE_ENV === "production" ? PROD_URL : "http://localhost:5173";
 
 // --- MIDDLEWARE ---
 app.use(cors({
   origin: CLIENT_URL,
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
+  credentials: true
 }));
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 // --- DATABASE CONNECTION ---
 mongoose.set('strictQuery', false);
@@ -486,6 +489,19 @@ app.use(cookieSession({
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   httpOnly: true
 }));
+ app.use((req, res, next) => {
+  if (req.session && !req.session.regenerate) {
+    req.session.regenerate = (cb) => {
+      cb();
+    };
+  }
+  if (req.session && !req.session.save) {
+    req.session.save = (cb) => {
+      cb();
+    };
+  }
+  next();
+});
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -748,9 +764,9 @@ app.get("/api/messages/:contactId", async (req, res) => {
 
 // --- PRODUCTION SERVING ---
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "dist")));
+  app.use(express.static(path.join(__dirname, "../nebula-chat/dist")));
   app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, "dist", "index.html"));
+    res.sendFile(path.join(__dirname, "../nebula-chat","dist", "index.html"));
   });
 }
 
