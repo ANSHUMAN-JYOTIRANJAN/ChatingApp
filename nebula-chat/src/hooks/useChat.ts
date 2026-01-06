@@ -258,7 +258,10 @@ import { io } from "socket.io-client";
 import { INITIAL_CONTACTS, INITIAL_MESSAGES, THEMES } from "../constants";
 import { formatRelativeTime } from "../utils";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// [FIX] Ensure this matches your axios.tsx exactly to prevent connection issues
+const API_URL = import.meta.env.MODE === "development" 
+  ? "http://localhost:5000" 
+  : "https://nebula-p0u4.onrender.com";
 
 export const useChat = () => {
   // --- STATE MANAGEMENT ---
@@ -495,10 +498,10 @@ export const useChat = () => {
       const contact = contacts.find((c) => c.id === activeChatId);
       if (contact?.isAI) return;
 
-      // 1. Emit to Socket (Instant UI update happens via listener or optimistic update)
+      // [FIX] Changed 'receiver' to 'receiverId' to match server expectations
       const messageData = {
         sender: user.id,
-        receiver: activeChatId,
+        receiverId: activeChatId, // <--- THIS WAS THE CAUSE OF THE 400 ERROR
         text: content,
         type,
         replyTo: replyingTo ? replyingTo.id : null,
@@ -546,10 +549,10 @@ export const useChat = () => {
       });
       const data = await response.json();
 
-      // The server usually emits a socket event after upload,
-      // but if not, we can rely on 'getMessage' listener or refresh.
       if (data.success) {
-        // Trigger a refresh or let socket handle it
+        // [OPTIONAL] You might want to automatically send the image message here
+        // handleSendMessage("", "image", null, data.fileUrl); 
+        // Note: You would need to update handleSendMessage signature to accept fileUrl
       }
     } catch (error) {
       console.error("Error uploading file:", error);
