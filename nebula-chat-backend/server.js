@@ -553,9 +553,8 @@ const io = new Server(server, {
 
 let onlineUsers = [];
 
-// const getUser = (userId) => onlineUsers.find((user) => user.userId === userId);
+// Ensure we convert to string to match different ID types
 const getUser = (userId) => onlineUsers.find((user) => user.userId === userId.toString());
-const receiverSocket = getUser(receiverId);
 
 io.on("connection", (socket) => {
   socket.on("addUser", (userId) => {
