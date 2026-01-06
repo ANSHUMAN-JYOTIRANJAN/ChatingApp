@@ -30,9 +30,10 @@ import { EmptyState } from "./components/Modals";
 import ProfilePopup from "./components/ProfilePopup";
 // import ProfileDetailsModal from "./components/ProfileDetailsModal";
 import SettingsModal from "./components/SettingsModal";
-
+import {  BASE_URL } from "./lib/axios";
 // CHANGE: Define API URL based on environment variables
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 
 function App() {
   const {
@@ -337,7 +338,7 @@ function App() {
                   {/* CHANGE: Use dynamic API_URL for logout */}
                   <button
                     onClick={() =>
-                      window.open(`${API_URL}/api/logout`, "_self")
+                      window.open(`${BASE_URL}/api/logout`, "_self")
                     }
                     className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 w-full text-sm font-medium transition-all rounded-xl hover:shadow-md hover:shadow-red-500/10"
                   >
