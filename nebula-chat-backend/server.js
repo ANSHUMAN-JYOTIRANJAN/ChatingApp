@@ -459,7 +459,7 @@ const server = http.createServer(app);
 // Trust Proxy for Render/Heroku (Required for secure cookies behind load balancers)
 app.set("trust proxy", 1);
 
-const PROD_URL = "https://nebula-jxl8.onrender.com"; 
+const PROD_URL = "https://nebula-p0u4.onrender.com"; 
 const CLIENT_URL = process.env.NODE_ENV === "production" ? PROD_URL : "http://localhost:5173";
 
 // --- MIDDLEWARE ---
@@ -553,7 +553,9 @@ const io = new Server(server, {
 
 let onlineUsers = [];
 
-const getUser = (userId) => onlineUsers.find((user) => user.userId === userId);
+// const getUser = (userId) => onlineUsers.find((user) => user.userId === userId);
+const getUser = (userId) => onlineUsers.find((user) => user.userId === userId.toString());
+const receiverSocket = getUser(receiverId);
 
 io.on("connection", (socket) => {
   socket.on("addUser", (userId) => {
@@ -727,6 +729,12 @@ app.post("/api/messages/send", async (req, res) => {
   
   const { receiverId, text, type, fileUrl, fileName, callDetails, replyTo } = req.body;
   
+  // 1. ADD THIS VALIDATION
+  if (!receiverId) {
+    console.error("Message Error: Missing receiverId");
+    return res.status(400).send({ error: "Receiver ID is required" });
+  }
+
   try {
     const newMessage = await new Message({
       sender: req.user._id,
@@ -744,7 +752,9 @@ app.post("/api/messages/send", async (req, res) => {
       io.to(receiverSocket.socketId).emit("getMessage", newMessage);
     }
   } catch (err) {
-    res.status(500).send(err);
+    // 2. ADD THIS LOGGING
+    console.error("FATAL MESSAGE ERROR:", err); 
+    res.status(500).send({ error: err.message });
   }
 });
 

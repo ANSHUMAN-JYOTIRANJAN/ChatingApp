@@ -26,9 +26,9 @@ import MessageBubble from "./components/MessageBubble";
 import ChatInput from "./components/ChatInput";
 import CallOverlay from "./components/CallOverlay";
 import { EmptyState } from "./components/Modals";
-// import ProfilePanel from "./components/ProfilePanel";
+import ProfilePanel from "./components/ProfilePanel";
 import ProfilePopup from "./components/ProfilePopup";
-// import ProfileDetailsModal from "./components/ProfileDetailsModal";
+import ProfileDetailsModal from "./components/ProfileDetailsModal";
 import SettingsModal from "./components/SettingsModal";
 import {  BASE_URL } from "./lib/axios";
 // CHANGE: Define API URL based on environment variables
@@ -67,7 +67,7 @@ function App() {
     setPreviewProfile,
     detailedProfile,
     setDetailedProfile,
-    // handleUpdateContact,
+    handleUpdateContact,
     addContactByCode,
     updateMyProfile,
   } = useChat();
@@ -191,7 +191,7 @@ function App() {
           </div>
         </div>
       )}
-{/* 
+
       {detailedProfile && (
         <ProfileDetailsModal
           contact={detailedProfile}
@@ -199,7 +199,7 @@ function App() {
           theme={theme}
           onUpdate={handleUpdateContact}
         />
-      )} */}
+      )}
       {previewProfile && (
         <ProfilePopup
           contact={previewProfile}
@@ -561,9 +561,9 @@ function App() {
                   borderColor: theme.border,
                   color: theme.textSec,
                 }}
-                // onClick={() =>
-                //   // handleUpdateContact({ ...activeContact, blocked: false })
-                // }
+                onClick={() =>
+                  handleUpdateContact({ ...activeContact, blocked: false })
+                }
               >
                 <Ban size={24} className="text-red-500" />
                 <span className="text-red-500">
@@ -576,14 +576,14 @@ function App() {
           <EmptyState theme={theme} />
         )}
       </div>
-      {/* {viewingProfile && (
-        // <ProfilePanel
-        //   contact={viewingProfile}
-        //   onClose={() => setViewingProfile(null)}
-        //   theme={theme}
-        //   onUpdate={handleUpdateContact}
-        // />
-      )} */}
+      {viewingProfile && (
+        <ProfilePanel
+          contact={viewingProfile}
+          onClose={() => setViewingProfile(null)}
+          theme={theme}
+          onUpdate={handleUpdateContact}
+        />
+      )}
     </div>
   );
 }

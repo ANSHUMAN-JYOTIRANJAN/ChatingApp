@@ -299,6 +299,14 @@ export const useChat = () => {
     [contacts, activeChatId]
   );
 
+  const handleUpdateContact = useCallback((updatedContact: any) => {
+    setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+    if (updatedContact.id === 'me' || updatedContact.id === user?.id) setUser((prev: any) => ({ ...prev, ...updatedContact }));
+    if (viewingProfile?.id === updatedContact.id) setViewingProfile(updatedContact);
+    if (previewProfile?.id === updatedContact.id) setPreviewProfile(updatedContact);
+    if (detailedProfile?.id === updatedContact.id) setDetailedProfile(updatedContact);
+  }, [user, viewingProfile, previewProfile, detailedProfile]);
+
   // --- INITIALIZATION & SOCKETS ---
   useEffect(() => {
     const fetchUser = async () => {
@@ -712,6 +720,6 @@ export const useChat = () => {
     setPreviewProfile,
     detailedProfile,
     setDetailedProfile,
-    
+    handleUpdateContact,
   };
 };
