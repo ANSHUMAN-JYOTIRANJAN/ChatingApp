@@ -795,6 +795,7 @@ const path = require("path");
 const multer = require("multer");
 const fs = require('fs');
 const { Server } = require("socket.io");
+const nodemailer = require("nodemailer");
 
 // Only load .env file if we are NOT in production
 if (process.env.NODE_ENV !== "production") {
@@ -943,6 +944,15 @@ const getRandomColor = (name) => {
 
 const generateShareId = () => "NEB-" + crypto.randomBytes(3).toString("hex").toUpperCase();
 
+// --- EMAIL CONFIGURATION (FIXED) ---
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER, // Add to .env
+    pass: process.env.EMAIL_PASS, // Add to .env (App Password)
+  },
+});
+
 // --- PASSPORT CONFIG ---
 passport.use(
   new GoogleStrategy({
@@ -954,7 +964,9 @@ passport.use(
     async (token, refToken, profile, done) => {
       try {
         let user = await User.findOne({ googleId: profile.id });
+        
         if (!user) {
+          // 1. Create User
           const color = getRandomColor(profile.displayName);
           const avatar = profile.photos?.[0]?.value || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.displayName)}&background=${color}&color=fff`;
           
@@ -965,7 +977,34 @@ passport.use(
             avatar: avatar,
             shareId: generateShareId(),
           }).save();
+
+          // 2. Send Welcome Email (Only for new users)
+          if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+             const mailOptions = {
+              from: '"Nebula Chat" <' + process.env.EMAIL_USER + '>',
+              to: user.email,
+              subject: "Welcome to Nebula Chat! 🚀",
+              html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                  <h2 style="color: #673AB7;">Welcome, ${user.displayName}!</h2>
+                  <p>We are thrilled to have you on board. Your unique Share ID is:</p>
+                  <h3 style="background: #f4f4f4; padding: 10px; display: inline-block;">${user.shareId}</h3>
+                  <p>Share this ID with friends to start chatting!</p>
+                  <br/>
+                  <p>Best regards,<br/>The Nebula Team</p>
+                </div>
+              `
+            };
+            
+            transporter.sendMail(mailOptions, (err, info) => {
+              if (err) console.error("❌ Email Error:", err);
+              else console.log("✅ Welcome email sent to:", user.email);
+            });
+          } else {
+             console.log("⚠️ Email credentials missing in .env, skipping welcome email.");
+          }
         }
+        
         done(null, user);
       } catch (err) {
         done(err, null);
@@ -1091,7 +1130,6 @@ app.get("/api/messages/:contactId", async (req, res) => {
 });
 
 // --- ROOT ROUTE (Health Check) ---
-// This replaces the broken static file serving code
 app.get("/", (req, res) => {
   res.send("Nebula Chat Backend is Running Successfully 🚀");
 });
