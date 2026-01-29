@@ -430,22 +430,376 @@
 // server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 
+// const express = require("express");
+// const passport = require("passport");
+// const GoogleStrategy = require("passport-google-oauth20").Strategy;
+// const mongoose = require("mongoose");
+// const cookieSession = require("cookie-session");
+// const cors = require("cors");
+// const dotenv = require("dotenv");
+// const crypto = require("crypto");
+// const nodemailer = require("nodemailer");
+// const http = require("http");
+// const path = require("path");
+// const multer = require("multer"); // Added from Code A
+// const { Server } = require("socket.io");
+
+// const result = dotenv.config();
+// if (result.error) console.log("Error loading .env:", result.error);
+
+// // Critical Safety Check
+// if (!process.env.COOKIE_KEY || !process.env.MONGO_URI) {
+//   console.error("FATAL ERROR: COOKIE_KEY or MONGO_URI is not defined.");
+//   process.exit(1);
+// }
+
+// const app = express();
+// const server = http.createServer(app);
+
+// // Trust Proxy for Render/Heroku (Required for secure cookies behind load balancers)
+// app.set("trust proxy", 1);
+
+// const PROD_URL = "https://nebulafrontend-o0dr.onrender.com";
+// const CLIENT_URL = process.env.NODE_ENV === "production" ? PROD_URL : "http://localhost:5173";
+
+// // --- MIDDLEWARE ---
+// app.use(cors({
+//   origin: CLIENT_URL,
+//   methods: ["GET", "POST", "PUT", "DELETE"],
+//   credentials: true
+// }));
+
+
+
+// app.use(express.json({ limit: "15mb" }));
+// app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+
+// // --- DATABASE CONNECTION ---
+// mongoose.set('strictQuery', false);
+// mongoose.connect(process.env.MONGO_URI)
+//   .then(() => console.log("✅ MongoDB Connected"))
+//   .catch((err) => console.error("❌ MongoDB Error:", err));
+
+// // --- SESSION CONFIG ---
+// app.use(cookieSession({
+//   maxAge: 30 * 24 * 60 * 60 * 1000,
+//   keys: [process.env.COOKIE_KEY],
+//   // Secure cookies only in production to avoid localhost issues
+//   secure: process.env.NODE_ENV === "production",
+//   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+//   httpOnly: true
+// }));
+//  app.use((req, res, next) => {
+//   if (req.session && !req.session.regenerate) {
+//     req.session.regenerate = (cb) => {
+//       cb();
+//     };
+//   }
+//   if (req.session && !req.session.save) {
+//     req.session.save = (cb) => {
+//       cb();
+//     };
+//   }
+//   next();
+// });
+
+// app.use(passport.initialize());
+// app.use(passport.session());
+
+// // --- SCHEMAS ---
+// const UserSchema = new mongoose.Schema({
+//   googleId: { type: String, index: true },
+//   displayName: String,
+//   email: String,
+//   avatar: String,
+//   shareId: { type: String, unique: true, index: true },
+//   bio: { type: String, default: "Hey! I am using Nebula Chat." },
+//   lastSeen: { type: Date, default: Date.now },
+//   contacts: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+// });
+// const User = mongoose.model("User", UserSchema);
+
+// const MessageSchema = new mongoose.Schema({
+//   sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+//   receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+//   text: String,
+//   type: {
+//     type: String,
+//     enum: ["text", "image", "video", "file", "call"],
+//     default: "text",
+//   },
+//   fileUrl: String, // Added to support file uploads
+//   fileName: String,
+//   callDetails: {
+//     status: { type: String, enum: ["missed", "ended"] },
+//     duration: String,
+//   },
+//   timestamp: { type: Date, default: Date.now },
+//   replyTo: String
+// });
+// // Index for fast chat history retrieval
+// MessageSchema.index({ sender: 1, receiver: 1, timestamp: 1 });
+// MessageSchema.index({ receiver: 1, sender: 1, timestamp: 1 });
+// const Message = mongoose.model("Message", MessageSchema);
+
+// // --- SOCKET.IO SETUP ---
+// const io = new Server(server, {
+//   cors: {
+//     origin: CLIENT_URL,
+//     methods: ["GET", "POST", "PUT"],
+//     credentials: true,
+//   },
+// });
+
+// let onlineUsers = [];
+
+// // Ensure we convert to string to match different ID types
+// const getUser = (userId) => onlineUsers.find((user) => user.userId === userId.toString());
+
+// io.on("connection", (socket) => {
+//   socket.on("addUser", (userId) => {
+//     onlineUsers = onlineUsers.filter((user) => user.userId !== userId);
+//     onlineUsers.push({ userId, socketId: socket.id });
+//     io.emit("getUsers", onlineUsers);
+//   });
+
+//   // Call Signaling
+//   socket.on("callUser", ({ senderId, receiverId, type }) => {
+//     const user = getUser(receiverId);
+//     if (user) {
+//       io.to(user.socketId).emit("incomingCall", { senderId, type });
+//     }
+//   });
+
+//   socket.on("answerCall", ({ senderId }) => {
+//     const user = getUser(senderId);
+//     if (user) {
+//       io.to(user.socketId).emit("callAccepted");
+//     }
+//   });
+
+//   socket.on("endCall", ({ targetId }) => {
+//     const user = getUser(targetId);
+//     if (user) {
+//       io.to(user.socketId).emit("callEnded");
+//     }
+//   });
+
+//   socket.on("disconnect", () => {
+//     onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
+//     io.emit("getUsers", onlineUsers);
+//   });
+// });
+
+// // --- AUTH UTILS ---
+// const getRandomColor = (name) => {
+//   const colors = ["F44336", "E91E63", "9C27B0", "2196F3", "009688", "FFC107", "FF5722"];
+//   let hash = 0;
+//   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+//   return colors[Math.abs(hash) % colors.length];
+// };
+
+// const generateShareId = () => "NEB-" + crypto.randomBytes(3).toString("hex").toUpperCase();
+
+// // --- PASSPORT CONFIG ---
+// passport.use(
+//   new GoogleStrategy({
+//       clientID: process.env.GOOGLE_CLIENT_ID,
+//       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//       callbackURL: "/auth/google/callback",
+//       proxy: true
+//     },
+//     async (token, refToken, profile, done) => {
+//       try {
+//         let user = await User.findOne({ googleId: profile.id });
+//         if (!user) {
+//           const color = getRandomColor(profile.displayName);
+//           const avatar = profile.photos?.[0]?.value || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.displayName)}&background=${color}&color=fff`;
+          
+//           user = await new User({
+//             googleId: profile.id,
+//             displayName: profile.displayName,
+//             email: profile.emails[0].value,
+//             avatar: avatar,
+//             shareId: generateShareId(),
+//           }).save();
+//         }
+//         done(null, user);
+//       } catch (err) {
+//         done(err, null);
+//       }
+//     }
+//   )
+// );
+
+// passport.serializeUser((user, done) => done(null, user.id));
+// passport.deserializeUser((id, done) => User.findById(id).then(u => done(null, u)).catch(e => done(e, null)));
+
+// // --- FILE UPLOAD (Restored from Code A) ---
+// // Note: In a real production app, consider using AWS S3 or Cloudinary.
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => cb(null, "uploads/"),
+//   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+// });
+// const upload = multer({ storage });
+
+// // Ensure 'uploads' directory exists and is served statically
+// const fs = require('fs');
+// if (!fs.existsSync('uploads')){ fs.mkdirSync('uploads'); }
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// app.post("/upload", upload.single("file"), (req, res) => {
+//   if (!req.file) return res.status(400).send({ error: "No file uploaded" });
+  
+//   // Return the path that the frontend can use to display the image
+//   res.send({ 
+//     success: true, 
+//     fileUrl: `/uploads/${req.file.filename}`, 
+//     fileName: req.file.originalname 
+//   });
+// });
+
+// // --- API ROUTES ---
+
+// // Auth
+// app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" }));
+// app.get("/auth/google/callback", passport.authenticate("google", { failureRedirect: "/" }), (req, res) => res.redirect(CLIENT_URL));
+// app.get("/api/logout", (req, res) => {
+//   req.logout(() => {
+//     res.redirect(CLIENT_URL);
+//   });
+// });
+
+// // User Data
+// app.get("/api/current_user", async (req, res) => {
+//   if (!req.user) return res.status(401).send(null);
+  
+//   // Update last seen
+//   await User.findByIdAndUpdate(req.user._id, { lastSeen: new Date() });
+
+//   // Fetch user with contacts
+//   const userDoc = await User.findById(req.user._id).populate("contacts").lean();
+  
+//   // Aggregate last messages for sidebar
+//   const lastMessagesAgg = await Message.aggregate([
+//     { $match: { $or: [{ sender: req.user._id }, { receiver: req.user._id }] } },
+//     { $sort: { timestamp: -1 } },
+//     { $group: {
+//         _id: { $cond: [{ $eq: ["$sender", req.user._id] }, "$receiver", "$sender"] },
+//         lastMessageDoc: { $first: "$$ROOT" }
+//     }}
+//   ]);
+
+//   const lastMessageMap = {};
+//   lastMessagesAgg.forEach(i => lastMessageMap[i._id.toString()] = i.lastMessageDoc);
+
+//   const contactsWithMeta = userDoc.contacts.map(c => ({
+//     ...c,
+//     lastMessageDoc: lastMessageMap[c._id.toString()] || null
+//   }));
+
+//   res.send({ ...userDoc, contacts: contactsWithMeta });
+// });
+
+// // Profile Update
+// app.put("/api/user/update", async (req, res) => {
+//   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
+//   try {
+//     const updated = await User.findByIdAndUpdate(req.user._id, req.body, { new: true });
+//     res.send(updated);
+//   } catch(e) { res.status(500).send(e); }
+// });
+
+// // Add Contact
+// app.post("/api/contacts/add", async (req, res) => {
+//   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
+//   try {
+//     const userToAdd = await User.findOne({ shareId: req.body.targetShareId });
+//     if (!userToAdd) return res.status(404).send({ error: "User not found" });
+    
+//     await User.findByIdAndUpdate(req.user._id, { $addToSet: { contacts: userToAdd._id } });
+//     res.send(userToAdd);
+//   } catch(e) { res.status(500).send(e); }
+// });
+
+// // Send Message
+// app.post("/api/messages/send", async (req, res) => {
+//   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
+  
+//   const { receiverId, text, type, fileUrl, fileName, callDetails, replyTo } = req.body;
+  
+//   // 1. ADD THIS VALIDATION
+//   if (!receiverId) {
+//     console.error("Message Error: Missing receiverId");
+//     return res.status(400).send({ error: "Receiver ID is required" });
+//   }
+
+//   try {
+//     const newMessage = await new Message({
+//       sender: req.user._id,
+//       receiver: receiverId,
+//       text, type, fileUrl, fileName, callDetails, replyTo,
+//       timestamp: new Date()
+//     }).save();
+
+//     // 1. Return to sender immediately
+//     res.send(newMessage);
+
+//     // 2. Emit to receiver via Socket
+//     const receiverSocket = getUser(receiverId);
+//     if (receiverSocket) {
+//       io.to(receiverSocket.socketId).emit("getMessage", newMessage);
+//     }
+//   } catch (err) {
+//     // 2. ADD THIS LOGGING
+//     console.error("FATAL MESSAGE ERROR:", err); 
+//     res.status(500).send({ error: err.message });
+//   }
+// });
+
+// // Get Messages
+// app.get("/api/messages/:contactId", async (req, res) => {
+//   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
+//   try {
+//     const messages = await Message.find({
+//       $or: [
+//         { sender: req.user._id, receiver: req.params.contactId },
+//         { sender: req.params.contactId, receiver: req.user._id }
+//       ]
+//     }).sort({ timestamp: 1 });
+//     res.send(messages);
+//   } catch(e) { res.status(500).send(e); }
+// });
+
+// // --- PRODUCTION SERVING ---
+// if (process.env.NODE_ENV === "production") {
+//   app.use(express.static(path.join(__dirname, "../nebula-chat/dist")));
+//   app.get(/.*/, (req, res) => {
+//     res.sendFile(path.join(__dirname, "../nebula-chat","dist", "index.html"));
+//   });
+// }
+
+// const PORT = process.env.PORT || 5000;
+// server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+
 const express = require("express");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const mongoose = require("mongoose");
 const cookieSession = require("cookie-session");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 const http = require("http");
 const path = require("path");
-const multer = require("multer"); // Added from Code A
+const multer = require("multer");
+const fs = require('fs');
 const { Server } = require("socket.io");
 
-const result = dotenv.config();
-if (result.error) console.log("Error loading .env:", result.error);
+// Only load .env file if we are NOT in production
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 
 // Critical Safety Check
 if (!process.env.COOKIE_KEY || !process.env.MONGO_URI) {
@@ -459,7 +813,8 @@ const server = http.createServer(app);
 // Trust Proxy for Render/Heroku (Required for secure cookies behind load balancers)
 app.set("trust proxy", 1);
 
-const PROD_URL = "https://nebulafrontend-o0dr.onrender.com";
+// --- CONFIGURATION ---
+const PROD_URL = "https://nebulafrontend-o0dr.onrender.com"; // Your Frontend URL
 const CLIENT_URL = process.env.NODE_ENV === "production" ? PROD_URL : "http://localhost:5173";
 
 // --- MIDDLEWARE ---
@@ -468,8 +823,6 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
-
-
 
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
@@ -484,21 +837,19 @@ mongoose.connect(process.env.MONGO_URI)
 app.use(cookieSession({
   maxAge: 30 * 24 * 60 * 60 * 1000,
   keys: [process.env.COOKIE_KEY],
-  // Secure cookies only in production to avoid localhost issues
+  // Secure cookies only in production
   secure: process.env.NODE_ENV === "production",
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   httpOnly: true
 }));
- app.use((req, res, next) => {
+
+// Fix for Passport session regeneration
+app.use((req, res, next) => {
   if (req.session && !req.session.regenerate) {
-    req.session.regenerate = (cb) => {
-      cb();
-    };
+    req.session.regenerate = (cb) => { cb(); };
   }
   if (req.session && !req.session.save) {
-    req.session.save = (cb) => {
-      cb();
-    };
+    req.session.save = (cb) => { cb(); };
   }
   next();
 });
@@ -528,7 +879,7 @@ const MessageSchema = new mongoose.Schema({
     enum: ["text", "image", "video", "file", "call"],
     default: "text",
   },
-  fileUrl: String, // Added to support file uploads
+  fileUrl: String,
   fileName: String,
   callDetails: {
     status: { type: String, enum: ["missed", "ended"] },
@@ -552,8 +903,6 @@ const io = new Server(server, {
 });
 
 let onlineUsers = [];
-
-// Ensure we convert to string to match different ID types
 const getUser = (userId) => onlineUsers.find((user) => user.userId === userId.toString());
 
 io.on("connection", (socket) => {
@@ -563,26 +912,19 @@ io.on("connection", (socket) => {
     io.emit("getUsers", onlineUsers);
   });
 
-  // Call Signaling
   socket.on("callUser", ({ senderId, receiverId, type }) => {
     const user = getUser(receiverId);
-    if (user) {
-      io.to(user.socketId).emit("incomingCall", { senderId, type });
-    }
+    if (user) io.to(user.socketId).emit("incomingCall", { senderId, type });
   });
 
   socket.on("answerCall", ({ senderId }) => {
     const user = getUser(senderId);
-    if (user) {
-      io.to(user.socketId).emit("callAccepted");
-    }
+    if (user) io.to(user.socketId).emit("callAccepted");
   });
 
   socket.on("endCall", ({ targetId }) => {
     const user = getUser(targetId);
-    if (user) {
-      io.to(user.socketId).emit("callEnded");
-    }
+    if (user) io.to(user.socketId).emit("callEnded");
   });
 
   socket.on("disconnect", () => {
@@ -635,23 +977,19 @@ passport.use(
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) => User.findById(id).then(u => done(null, u)).catch(e => done(e, null)));
 
-// --- FILE UPLOAD (Restored from Code A) ---
-// Note: In a real production app, consider using AWS S3 or Cloudinary.
+// --- FILE UPLOAD (LOCAL STORAGE) ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 const upload = multer({ storage });
 
-// Ensure 'uploads' directory exists and is served statically
-const fs = require('fs');
+// Ensure 'uploads' directory exists
 if (!fs.existsSync('uploads')){ fs.mkdirSync('uploads'); }
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).send({ error: "No file uploaded" });
-  
-  // Return the path that the frontend can use to display the image
   res.send({ 
     success: true, 
     fileUrl: `/uploads/${req.file.filename}`, 
@@ -673,14 +1011,10 @@ app.get("/api/logout", (req, res) => {
 // User Data
 app.get("/api/current_user", async (req, res) => {
   if (!req.user) return res.status(401).send(null);
-  
-  // Update last seen
   await User.findByIdAndUpdate(req.user._id, { lastSeen: new Date() });
 
-  // Fetch user with contacts
   const userDoc = await User.findById(req.user._id).populate("contacts").lean();
   
-  // Aggregate last messages for sidebar
   const lastMessagesAgg = await Message.aggregate([
     { $match: { $or: [{ sender: req.user._id }, { receiver: req.user._id }] } },
     { $sort: { timestamp: -1 } },
@@ -701,7 +1035,6 @@ app.get("/api/current_user", async (req, res) => {
   res.send({ ...userDoc, contacts: contactsWithMeta });
 });
 
-// Profile Update
 app.put("/api/user/update", async (req, res) => {
   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
   try {
@@ -710,7 +1043,6 @@ app.put("/api/user/update", async (req, res) => {
   } catch(e) { res.status(500).send(e); }
 });
 
-// Add Contact
 app.post("/api/contacts/add", async (req, res) => {
   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
   try {
@@ -722,42 +1054,29 @@ app.post("/api/contacts/add", async (req, res) => {
   } catch(e) { res.status(500).send(e); }
 });
 
-// Send Message
 app.post("/api/messages/send", async (req, res) => {
   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
-  
   const { receiverId, text, type, fileUrl, fileName, callDetails, replyTo } = req.body;
   
-  // 1. ADD THIS VALIDATION
-  if (!receiverId) {
-    console.error("Message Error: Missing receiverId");
-    return res.status(400).send({ error: "Receiver ID is required" });
-  }
+  if (!receiverId) return res.status(400).send({ error: "Receiver ID is required" });
 
   try {
     const newMessage = await new Message({
-      sender: req.user._id,
-      receiver: receiverId,
-      text, type, fileUrl, fileName, callDetails, replyTo,
-      timestamp: new Date()
+      sender: req.user._id, receiver: receiverId, text, type, fileUrl, fileName, callDetails, replyTo, timestamp: new Date()
     }).save();
 
-    // 1. Return to sender immediately
     res.send(newMessage);
 
-    // 2. Emit to receiver via Socket
     const receiverSocket = getUser(receiverId);
     if (receiverSocket) {
       io.to(receiverSocket.socketId).emit("getMessage", newMessage);
     }
   } catch (err) {
-    // 2. ADD THIS LOGGING
-    console.error("FATAL MESSAGE ERROR:", err); 
+    console.error("Message Error:", err); 
     res.status(500).send({ error: err.message });
   }
 });
 
-// Get Messages
 app.get("/api/messages/:contactId", async (req, res) => {
   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
   try {
@@ -771,13 +1090,11 @@ app.get("/api/messages/:contactId", async (req, res) => {
   } catch(e) { res.status(500).send(e); }
 });
 
-// --- PRODUCTION SERVING ---
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../nebula-chat/dist")));
-  app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, "../nebula-chat","dist", "index.html"));
-  });
-}
+// --- ROOT ROUTE (Health Check) ---
+// This replaces the broken static file serving code
+app.get("/", (req, res) => {
+  res.send("Nebula Chat Backend is Running Successfully 🚀");
+});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
