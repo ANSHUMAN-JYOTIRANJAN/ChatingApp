@@ -80,7 +80,7 @@
 
 export interface Theme {
   id: string;
-  type: "light" | "dark"; // [FIX] Added this required property
+  type?: "light" | "dark"; // [FIX] Added this required property
   bg: string;
   textMain: string;
   textSec: string;
