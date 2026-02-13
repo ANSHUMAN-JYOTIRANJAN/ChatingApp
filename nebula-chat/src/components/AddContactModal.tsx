@@ -44,7 +44,8 @@ export default function AddContactModal({ onClose, onAdd }: AddContactModalProps
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="NEB-XXXX"
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none font-mono text-lg uppercase transition-colors"
+                // FIX: Added 'text-gray-900' below to force dark text
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 text-gray-900 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none font-mono text-lg uppercase transition-colors"
                 autoFocus
               />
             </div>
