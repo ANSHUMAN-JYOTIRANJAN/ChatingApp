@@ -1267,7 +1267,7 @@ const server = http.createServer(app);
 app.set("trust proxy", 1);
 
 // --- URL CONFIGURATION ---
-const PROD_FRONTEND = "https://nebulachatapp.onrender.com";
+const PROD_FRONTEND = "";
 const CLIENT_URL =
   process.env.NODE_ENV === "production"
     ? PROD_FRONTEND
