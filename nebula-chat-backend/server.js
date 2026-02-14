@@ -779,12 +779,6 @@
 // const PORT = process.env.PORT || 5000;
 // server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
-
-
-
-
-
-
 // const express = require("express");
 // const passport = require("passport");
 // const GoogleStrategy = require("passport-google-oauth20").Strategy;
@@ -1237,11 +1231,7 @@
 // const PORT = process.env.PORT || 5000;
 // server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
-
-
-
-
-/// ADDED at 05 FEB 2026 
+/// ADDED at 05 FEB 2026
 
 const express = require("express");
 const passport = require("passport");
@@ -1285,10 +1275,12 @@ const CLIENT_URL =
 
 // --- MIDDLEWARE ---
 // 1. Security Headers (Configured to allow Cross-Origin images/media)
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: false // Disabled for simplicity with external avatars/images
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // Disabled for simplicity with external avatars/images
+  }),
+);
 
 // 2. Gzip Compression (Faster load times)
 app.use(compression());
@@ -1299,7 +1291,7 @@ app.use(
     origin: CLIENT_URL,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-  })
+  }),
 );
 
 // 4. Body Parsers (High limit for file uploads)
@@ -1327,7 +1319,7 @@ app.use(
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     httpOnly: true,
-  })
+  }),
 );
 
 // Passport Session Fix (Regenerate session to prevent fixation attacks)
@@ -1360,7 +1352,11 @@ const User = mongoose.model("User", UserSchema);
 // Message Schema: Includes Reactions, Soft Delete, AND Status
 const MessageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   text: String,
   type: {
     type: String,
@@ -1376,6 +1372,10 @@ const MessageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
   replyTo: String,
   isDeleted: { type: Boolean, default: false },
+  deletedFor: [
+  { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+],
+
   reactions: [
     {
       emoji: String,
@@ -1383,11 +1383,11 @@ const MessageSchema = new mongoose.Schema({
     },
   ],
   // Read Receipt Status
-  status: { 
-    type: String, 
-    enum: ["sent", "delivered", "read"], 
-    default: "sent" 
-  }
+  status: {
+    type: String,
+    enum: ["sent", "delivered", "read"],
+    default: "sent",
+  },
 });
 
 // Indexes for fast retrieval
@@ -1408,7 +1408,8 @@ const io = new Server(server, {
 
 let onlineUsers = [];
 
-const getUser = (userId) => onlineUsers.find((user) => user.userId === userId.toString());
+const getUser = (userId) =>
+  onlineUsers.find((user) => user.userId === userId.toString());
 
 io.on("connection", (socket) => {
   // User Connects
@@ -1426,13 +1427,15 @@ io.on("connection", (socket) => {
       // 1. Update all unread messages in DB
       await Message.updateMany(
         { sender: senderId, receiver: receiverId, status: { $ne: "read" } },
-        { $set: { status: "read" } }
+        { $set: { status: "read" } },
       );
-      
+
       // 2. Notify the Sender (so they see blue ticks immediately)
       const senderSocket = getUser(senderId);
       if (senderSocket) {
-        io.to(senderSocket.socketId).emit("messagesRead", { readerId: receiverId });
+        io.to(senderSocket.socketId).emit("messagesRead", {
+          readerId: receiverId,
+        });
       }
     } catch (e) {
       console.error("markRead Error:", e);
@@ -1458,24 +1461,28 @@ io.on("connection", (socket) => {
   // Typing Logic
   socket.on("typing", ({ receiverId }) => {
     const user = getUser(receiverId);
-    if (user) io.to(user.socketId).emit("userTyping", { senderId: socket.userId });
+    if (user)
+      io.to(user.socketId).emit("userTyping", { senderId: socket.userId });
   });
 
   socket.on("stopTyping", ({ receiverId }) => {
     const user = getUser(receiverId);
-    if (user) io.to(user.socketId).emit("userStopTyping", { senderId: socket.userId });
+    if (user)
+      io.to(user.socketId).emit("userStopTyping", { senderId: socket.userId });
   });
 
   // [OPTIMIZED] User Disconnects - Updates Last Seen
   socket.on("disconnect", async () => {
     const userEntry = onlineUsers.find((user) => user.socketId === socket.id);
     if (userEntry) {
-        try {
-            // Update last seen in background
-            User.findByIdAndUpdate(userEntry.userId, { lastSeen: new Date() }).exec();
-        } catch (e) {
-            console.error("Error updating last seen on disconnect:", e);
-        }
+      try {
+        // Update last seen in background
+        User.findByIdAndUpdate(userEntry.userId, {
+          lastSeen: new Date(),
+        }).exec();
+      } catch (e) {
+        console.error("Error updating last seen on disconnect:", e);
+      }
     }
     onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
     io.emit("getUsers", onlineUsers);
@@ -1484,13 +1491,23 @@ io.on("connection", (socket) => {
 
 // --- UTILS ---
 const getRandomColor = (name) => {
-  const colors = ["F44336", "E91E63", "9C27B0", "2196F3", "009688", "FFC107", "FF5722"];
+  const colors = [
+    "F44336",
+    "E91E63",
+    "9C27B0",
+    "2196F3",
+    "009688",
+    "FFC107",
+    "FF5722",
+  ];
   let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++)
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
 };
 
-const generateShareId = () => "NEB-" + crypto.randomBytes(3).toString("hex").toUpperCase();
+const generateShareId = () =>
+  "NEB-" + crypto.randomBytes(3).toString("hex").toUpperCase();
 
 // --- EMAIL SERVICE ---
 const transporter = nodemailer.createTransport({
@@ -1543,7 +1560,9 @@ passport.use(
                 </div>
               `,
             };
-            transporter.sendMail(mailOptions).catch(err => console.error("Email Error:", err.message));
+            transporter
+              .sendMail(mailOptions)
+              .catch((err) => console.error("Email Error:", err.message));
           }
         }
         done(null, user);
@@ -1551,19 +1570,22 @@ passport.use(
         console.error("Auth Error:", err);
         done(err, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) =>
-  User.findById(id).then((u) => done(null, u)).catch((e) => done(e, null))
+  User.findById(id)
+    .then((u) => done(null, u))
+    .catch((e) => done(e, null)),
 );
 
 // --- FILE UPLOAD ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
 });
 
 const upload = multer({ storage });
@@ -1583,33 +1605,49 @@ app.post("/upload", upload.single("file"), (req, res) => {
 // --- API ROUTES ---
 
 // Auth Routes
-app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" }));
-app.get("/auth/google/callback", passport.authenticate("google", { failureRedirect: "/" }), (req, res) => res.redirect(CLIENT_URL));
-app.get("/api/logout", (req, res) => { req.logout(() => res.redirect(CLIENT_URL)); });
+app.get(
+  "/auth/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account",
+  }),
+);
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }),
+  (req, res) => res.redirect(CLIENT_URL),
+);
+app.get("/api/logout", (req, res) => {
+  req.logout(() => res.redirect(CLIENT_URL));
+});
 
 // User Data
 app.get("/api/current_user", async (req, res) => {
   if (!req.user) return res.status(401).send(null);
-  
+
   // Async update of lastSeen (don't await to speed up response)
   User.findByIdAndUpdate(req.user._id, { lastSeen: new Date() }).exec();
 
   const userDoc = await User.findById(req.user._id).populate("contacts").lean();
-  
+
   // Efficient aggregation for last messages
   const lastMessagesAgg = await Message.aggregate([
     { $match: { $or: [{ sender: req.user._id }, { receiver: req.user._id }] } },
     { $sort: { timestamp: -1 } },
     {
       $group: {
-        _id: { $cond: [{ $eq: ["$sender", req.user._id] }, "$receiver", "$sender"] },
+        _id: {
+          $cond: [{ $eq: ["$sender", req.user._id] }, "$receiver", "$sender"],
+        },
         lastMessageDoc: { $first: "$$ROOT" },
       },
     },
   ]);
 
   const lastMessageMap = {};
-  lastMessagesAgg.forEach((i) => (lastMessageMap[i._id.toString()] = i.lastMessageDoc));
+  lastMessagesAgg.forEach(
+    (i) => (lastMessageMap[i._id.toString()] = i.lastMessageDoc),
+  );
 
   const contactsWithMeta = userDoc.contacts.map((c) => ({
     ...c,
@@ -1622,9 +1660,13 @@ app.get("/api/current_user", async (req, res) => {
 app.put("/api/user/update", async (req, res) => {
   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
   try {
-    const updated = await User.findByIdAndUpdate(req.user._id, req.body, { new: true });
+    const updated = await User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+    });
     res.send(updated);
-  } catch (e) { res.status(500).send(e.message); }
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
 });
 
 app.post("/api/contacts/add", async (req, res) => {
@@ -1632,27 +1674,39 @@ app.post("/api/contacts/add", async (req, res) => {
   try {
     const userToAdd = await User.findOne({ shareId: req.body.targetShareId });
     if (!userToAdd) return res.status(404).send({ error: "User not found" });
-    if (userToAdd._id.equals(req.user._id)) return res.status(400).send({ error: "Cannot add yourself." });
+    if (userToAdd._id.equals(req.user._id))
+      return res.status(400).send({ error: "Cannot add yourself." });
 
-    await User.findByIdAndUpdate(req.user._id, { $addToSet: { contacts: userToAdd._id } });
+    await User.findByIdAndUpdate(req.user._id, {
+      $addToSet: { contacts: userToAdd._id },
+    });
     res.send(userToAdd);
-  } catch (e) { res.status(500).send(e.message); }
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
 });
 
 // Send Message
 app.post("/api/messages/send", async (req, res) => {
   if (!req.user) return res.status(401).send({ error: "Unauthorized" });
-  const { receiverId, text, type, fileUrl, fileName, callDetails, replyTo } = req.body;
-  
-  if (!receiverId) return res.status(400).send({ error: "Receiver ID required" });
+  const { receiverId, text, type, fileUrl, fileName, callDetails, replyTo } =
+    req.body;
+
+  if (!receiverId)
+    return res.status(400).send({ error: "Receiver ID required" });
 
   try {
     const newMessage = await new Message({
       sender: req.user._id,
       receiver: receiverId,
-      text, type, fileUrl, fileName, callDetails, replyTo,
+      text,
+      type,
+      fileUrl,
+      fileName,
+      callDetails,
+      replyTo,
       timestamp: new Date(),
-      status: 'sent' // Default status
+      status: "sent", // Default status
     }).save();
 
     res.send(newMessage);
@@ -1673,7 +1727,8 @@ app.delete("/api/messages/:id", async (req, res) => {
   try {
     const msg = await Message.findById(req.params.id);
     if (!msg) return res.status(404).send({ error: "Not found" });
-    if (msg.sender.toString() !== req.user._id.toString()) return res.status(403).send({ error: "Not allowed" });
+    if (msg.sender.toString() !== req.user._id.toString())
+      return res.status(403).send({ error: "Not allowed" });
 
     msg.isDeleted = true;
     msg.text = "This message was deleted";
@@ -1682,10 +1737,13 @@ app.delete("/api/messages/:id", async (req, res) => {
     await msg.save();
 
     const receiverSocket = getUser(msg.receiver);
-    if (receiverSocket) io.to(receiverSocket.socketId).emit("messageUpdated", msg);
+    if (receiverSocket)
+      io.to(receiverSocket.socketId).emit("messageUpdated", msg);
 
     res.send(msg);
-  } catch (e) { res.status(500).send(e.message); }
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
 });
 
 // Reaction Logic
@@ -1696,16 +1754,23 @@ app.post("/api/messages/:id/reaction", async (req, res) => {
     const msg = await Message.findById(req.params.id);
     if (!msg) return res.status(404).send({ error: "Not found" });
 
-    msg.reactions = msg.reactions.filter((r) => r.user.toString() !== req.user._id.toString());
+    msg.reactions = msg.reactions.filter(
+      (r) => r.user.toString() !== req.user._id.toString(),
+    );
     if (emoji) msg.reactions.push({ emoji, user: req.user._id });
     await msg.save();
 
-    const targetUserId = msg.receiver.toString() === req.user._id.toString() ? msg.sender : msg.receiver;
+    const targetUserId =
+      msg.receiver.toString() === req.user._id.toString()
+        ? msg.sender
+        : msg.receiver;
     const socket = getUser(targetUserId);
     if (socket) io.to(socket.socketId).emit("messageUpdated", msg);
 
     res.send(msg);
-  } catch (e) { res.status(500).send(e.message); }
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
 });
 
 // Get Messages
@@ -1719,11 +1784,15 @@ app.get("/api/messages/:contactId", async (req, res) => {
       ],
     }).sort({ timestamp: 1 });
     res.send(messages);
-  } catch (e) { res.status(500).send(e.message); }
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
 });
 
 // Root Redirect
 app.get("/", (req, res) => res.redirect(CLIENT_URL));
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Nebula Chat Server running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`🚀 Nebula Chat Server running on port ${PORT}`),
+);
